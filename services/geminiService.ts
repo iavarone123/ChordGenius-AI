@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Genre, MusicalKey, MusicalMode, SongSection, SongStructure } from "../types.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
 const SECTION_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -19,6 +17,9 @@ export const generateChordProgressions = async (
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
+  // Creating the instance inside the function ensures we use the most recent process.env values
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
   
@@ -48,10 +49,12 @@ export const generateChordProgressions = async (
   });
 
   try {
-    return JSON.parse(response.text) as SongStructure;
+    const text = response.text;
+    if (!text) throw new Error("No response text received from AI");
+    return JSON.parse(text) as SongStructure;
   } catch (error) {
     console.error("Failed to parse Gemini response", error);
-    throw new Error("Invalid musical data received from AI.");
+    throw new Error("Musical data generation failed. Please check your connection and try again.");
   }
 };
 
@@ -61,6 +64,8 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
   This is a re-roll of just this one section. 
   
@@ -81,9 +86,11 @@ export const generateSingleSection = async (
   });
 
   try {
-    return JSON.parse(response.text) as SongSection;
+    const text = response.text;
+    if (!text) throw new Error("No response text received from AI");
+    return JSON.parse(text) as SongSection;
   } catch (error) {
     console.error("Failed to parse Gemini response for section", error);
-    throw new Error("Invalid section data received from AI.");
+    throw new Error("Section generation failed.");
   }
 };

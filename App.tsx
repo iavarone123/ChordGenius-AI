@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
-import { Genre, MusicalKey, MusicalMode, SongStructure, SongSection } from './types.ts';
+import React, { useState, useEffect } from 'react';
+import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Zap } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -13,15 +13,47 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
+  const [isApiKeyReady, setIsApiKeyReady] = useState<boolean>(!!process.env.API_KEY);
+
+  useEffect(() => {
+    // Check if we need to request a key selection (common for PWAs in some environments)
+    const checkKey = async () => {
+      if (!process.env.API_KEY && window.aistudio?.hasSelectedApiKey) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setIsApiKeyReady(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleConnectKey = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      // Assume success as per platform guidelines to avoid race conditions
+      setIsApiKeyReady(true);
+      setError(null);
+    }
+  };
 
   const handleGenerate = async () => {
+    if (!isApiKeyReady && !process.env.API_KEY) {
+      setError("Please connect your AI account first using the button below.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       const data = await generateChordProgressions(genre, key, mode);
       setResult(data);
     } catch (err: any) {
-      setError(err.message || "Something went wrong. Please check your API key.");
+      console.error(err);
+      if (err.message?.includes("API key")) {
+        setIsApiKeyReady(false);
+        setError("Your API key is missing or invalid. Please tap 'Connect to AI' below.");
+      } else {
+        setError(err.message || "Failed to generate chords. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -39,9 +71,7 @@ const App: React.FC = () => {
           url: url,
         });
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Error sharing song:', err);
-        }
+        if ((err as Error).name !== 'AbortError') console.error('Error sharing:', err);
       }
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
@@ -52,34 +82,24 @@ const App: React.FC = () => {
   const handleShareApp = async () => {
     const shareData = {
       title: 'ChordGenius AI',
-      text: 'I found this amazing AI songwriting tool for musicians. You can generate professional chord progressions in seconds!',
+      text: 'Check out this AI songwriting tool. It generates professional chord progressions in seconds!',
       url: window.location.origin,
     };
 
     if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Error sharing app:', err);
-        }
-      }
+      try { await navigator.share(shareData); } catch (err) { }
     } else {
       navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-      alert("App link and description copied! Send it to your friends.");
+      alert("App link copied!");
     }
   };
 
   const handleRerollSection = async (sectionKey: keyof SongStructure) => {
     if (!result) return;
-    
     setSectionLoading(prev => ({ ...prev, [sectionKey]: true }));
     try {
       const newSection = await generateSingleSection(genre, key, mode, sectionKey);
-      setResult(prev => prev ? ({
-        ...prev,
-        [sectionKey]: newSection
-      }) : null);
+      setResult(prev => prev ? ({ ...prev, [sectionKey]: newSection }) : null);
     } catch (err: any) {
       console.error(`Error rerolling ${sectionKey}:`, err);
     } finally {
@@ -94,7 +114,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 pb-20 selection:bg-indigo-500/30">
-      {/* Background decoration */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
@@ -110,17 +129,17 @@ const App: React.FC = () => {
               ChordGenius AI
             </h1>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2">
             <button 
               onClick={handleShareApp}
-              className="flex text-xs md:text-sm font-bold text-indigo-400 items-center gap-1.5 transition-all px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
+              className="flex text-xs font-bold text-indigo-400 items-center gap-1.5 transition-all px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Invite</span>
             </button>
             {result && (
               <button 
                 onClick={handleReset}
-                className="text-xs md:text-sm font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-2 md:px-3 py-1.5 rounded-lg hover:bg-slate-800"
+                className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
               >
                 <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Reset</span>
               </button>
@@ -137,7 +156,7 @@ const App: React.FC = () => {
                 Unlock your <br/> next <span className="text-indigo-400">masterpiece.</span>
               </h2>
               <p className="text-slate-400 text-base md:text-lg max-w-md mx-auto px-4">
-                The perfect songwriting tool for iPad and iPhone. Generate theory-backed chords in seconds.
+                The perfect songwriting tool for iPad. Generate theory-backed chords in seconds.
               </p>
             </div>
 
@@ -179,25 +198,40 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={handleGenerate}
-                disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                    Compose My Song
-                  </>
-                )}
-              </button>
+              {!isApiKeyReady && !process.env.API_KEY ? (
+                <div className="space-y-4">
+                  <button 
+                    onClick={handleConnectKey}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-3 text-lg active:scale-[0.98]"
+                  >
+                    <Zap className="w-6 h-6 fill-current" />
+                    Connect to ChordGenius AI
+                  </button>
+                  <p className="text-center text-xs text-slate-500">
+                    To use this on your iPad, you must first connect your account.
+                  </p>
+                </div>
+              ) : (
+                <button 
+                  onClick={handleGenerate}
+                  disabled={isLoading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                      Compose My Song
+                    </>
+                  )}
+                </button>
+              )}
 
               {error && (
-                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  {error}
+                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-3">
+                  <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+                  <p>{error}</p>
                 </div>
               )}
             </div>
@@ -224,44 +258,29 @@ const App: React.FC = () => {
               <div className="flex gap-4">
                 <button 
                   onClick={handleShareSong}
-                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg hover:shadow-indigo-500/5 active:scale-95"
+                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
                 >
-                  <Share2 className="w-5 h-5" /> Share Song
+                  <Share2 className="w-5 h-5" /> Share
                 </button>
                 <button 
                   onClick={handleGenerate}
                   className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
                 >
-                  <RotateCcw className="w-5 h-5" /> Remix All
+                  <RotateCcw className="w-5 h-5" /> Remix
                 </button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-8 md:gap-10">
-              <SongSectionView 
-                title="Verse" 
-                section={result.verse} 
-                onReroll={() => handleRerollSection('verse')}
-                isLoading={sectionLoading['verse']}
-              />
-              <SongSectionView 
-                title="Pre-Chorus" 
-                section={result.preChorus} 
-                onReroll={() => handleRerollSection('preChorus')}
-                isLoading={sectionLoading['preChorus']}
-              />
-              <SongSectionView 
-                title="Chorus" 
-                section={result.chorus} 
-                onReroll={() => handleRerollSection('chorus')}
-                isLoading={sectionLoading['chorus']}
-              />
-              <SongSectionView 
-                title="Bridge" 
-                section={result.bridge} 
-                onReroll={() => handleRerollSection('bridge')}
-                isLoading={sectionLoading['bridge']}
-              />
+              {(['verse', 'preChorus', 'chorus', 'bridge'] as const).map(section => (
+                <SongSectionView 
+                  key={section}
+                  title={section} 
+                  section={result[section]} 
+                  onReroll={() => handleRerollSection(section)}
+                  isLoading={sectionLoading[section]}
+                />
+              ))}
             </div>
 
             <footer className="text-center pt-16 md:pt-20 border-t border-slate-800/40">

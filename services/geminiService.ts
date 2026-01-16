@@ -12,23 +12,30 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
+const getAiInstance = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Your AI session has expired or is not connected. Please connect to AI on the home screen.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  // Creating the instance inside the function ensures we use the most recent process.env values
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAiInstance();
   
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
   
   CRITICAL: In the 'description' field for each section, you MUST include:
-  1. The Roman Numeral analysis of the progression (e.g., I - vi - IV - V or ii - V - I).
+  1. The Roman Numeral analysis of the progression (e.g., I - vi - IV - V).
   2. A brief music theory explanation of why these chords work for the ${genre} genre.
-  3. Mention the specific chord names in the explanation text as well.
+  3. Mention the specific chord names.
   
-  Ensure the chords are stylistically accurate. Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
+  Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -50,11 +57,10 @@ export const generateChordProgressions = async (
 
   try {
     const text = response.text;
-    if (!text) throw new Error("No response text received from AI");
+    if (!text) throw new Error("No response received.");
     return JSON.parse(text) as SongStructure;
   } catch (error) {
-    console.error("Failed to parse Gemini response", error);
-    throw new Error("Musical data generation failed. Please check your connection and try again.");
+    throw new Error("Musical data generation failed. Please try again.");
   }
 };
 
@@ -64,17 +70,13 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAiInstance();
   
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
-  This is a re-roll of just this one section. 
   
-  CRITICAL: In the 'description' field, you MUST include:
-  1. The Roman Numeral analysis (e.g., IV - V - iii - vi).
-  2. A brief theory breakdown of the movement.
-  3. Mention the specific chords names.
+  CRITICAL: In the 'description' field, include the Roman Numeral analysis and a theory breakdown.
   
-  Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
+  Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -87,10 +89,9 @@ export const generateSingleSection = async (
 
   try {
     const text = response.text;
-    if (!text) throw new Error("No response text received from AI");
+    if (!text) throw new Error("No response received.");
     return JSON.parse(text) as SongSection;
   } catch (error) {
-    console.error("Failed to parse Gemini response for section", error);
     throw new Error("Section generation failed.");
   }
 };

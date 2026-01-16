@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure, SongSection } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -27,7 +27,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShareSong = async () => {
     const text = `Check out my ${genre} song in ${key} ${mode} generated with ChordGenius AI!`;
     const url = window.location.href;
     
@@ -43,7 +43,28 @@ const App: React.FC = () => {
       }
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
-      alert("Link and details copied to clipboard!");
+      alert("Song details and link copied to clipboard!");
+    }
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'ChordGenius AI',
+      text: 'I found this amazing AI songwriting tool for musicians. You can generate professional chord progressions in seconds!',
+      url: window.location.origin,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Error sharing app:', err);
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      alert("App link and description copied! Send it to your friends.");
     }
   };
 
@@ -87,21 +108,19 @@ const App: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={handleShareApp}
+              className="flex text-xs md:text-sm font-bold text-indigo-400 items-center gap-1.5 transition-all px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
+            >
+              <Send className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Invite Friends</span>
+            </button>
             {result && (
-              <>
-                <button 
-                  className="flex text-xs md:text-sm font-medium text-slate-400 hover:text-white items-center gap-1.5 transition-colors px-2 md:px-3 py-1.5 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4" /> <span className="hidden sm:inline">Share</span>
-                </button>
-                <button 
-                  onClick={handleReset}
-                  className="text-xs md:text-sm font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-2 md:px-3 py-1.5 rounded-lg hover:bg-slate-800"
-                >
-                  <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Reset</span>
-                </button>
-              </>
+              <button 
+                onClick={handleReset}
+                className="text-xs md:text-sm font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-2 md:px-3 py-1.5 rounded-lg hover:bg-slate-800"
+              >
+                <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Reset</span>
+              </button>
             )}
           </div>
         </div>
@@ -182,8 +201,8 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 pt-4">
               <FeatureCard icon={<Guitar />} title="4 Voicings" desc="Optimized for touch screens. Tap to see neck positions." />
-              <FeatureCard icon={<Sparkles />} title="AI Theorist" desc="Includes Reggae and more. Pro music theory analysis." />
-              <FeatureCard icon={<Smartphone />} title="Mobile First" desc="Add to Home Screen on iOS for the full app experience." />
+              <FeatureCard icon={<Users />} title="Share the Love" desc="Know a musician? Use the invite button to share this app!" onClick={handleShareApp} />
+              <FeatureCard icon={<Smartphone />} title="PWA Ready" desc="Tap Share and select 'Add to Home Screen' on iOS." />
             </div>
           </div>
         ) : (
@@ -201,10 +220,16 @@ const App: React.FC = () => {
               </div>
               <div className="flex gap-4">
                 <button 
-                  onClick={handleGenerate}
+                  onClick={handleShareSong}
                   className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg hover:shadow-indigo-500/5 active:scale-95"
                 >
-                  <Sparkles className="w-5 h-5" /> Remix All
+                  <Share2 className="w-5 h-5" /> Share Song
+                </button>
+                <button 
+                  onClick={handleGenerate}
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
+                >
+                  <RotateCcw className="w-5 h-5" /> Remix All
                 </button>
               </div>
             </div>
@@ -237,8 +262,8 @@ const App: React.FC = () => {
             </div>
 
             <footer className="text-center pt-16 md:pt-20 border-t border-slate-800/40">
-              <p className="text-slate-500 text-sm font-medium mb-6">
-                On iPhone/iPad? Tap Share and select "Add to Home Screen" to use as an app!
+              <p className="text-slate-400 text-sm font-medium mb-6">
+                Love this app? <button onClick={handleShareApp} className="text-indigo-400 hover:underline font-bold">Invite your bandmates!</button>
               </p>
               <div className="flex items-center justify-center gap-6 opacity-30 grayscale contrast-125">
                  <Music className="w-5 h-5" />
@@ -253,9 +278,12 @@ const App: React.FC = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) => (
-  <div className="flex flex-col items-center text-center p-6 space-y-3 bg-slate-900/20 rounded-3xl border border-slate-800/30 hover:bg-slate-900/40 transition-all hover:scale-105 active:scale-95">
-    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shadow-inner">
+const FeatureCard = ({ icon, title, desc, onClick }: { icon: React.ReactNode, title: string, desc: string, onClick?: () => void }) => (
+  <div 
+    onClick={onClick}
+    className={`flex flex-col items-center text-center p-6 space-y-3 bg-slate-900/20 rounded-3xl border border-slate-800/30 transition-all hover:scale-105 active:scale-95 ${onClick ? 'cursor-pointer hover:bg-indigo-500/10 border-indigo-500/10' : 'hover:bg-slate-900/40'}`}
+  >
+    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${onClick ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-900/40 text-indigo-400/80'}`}>
       {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7" })}
     </div>
     <h4 className="font-bold text-white text-lg tracking-tight">{title}</h4>

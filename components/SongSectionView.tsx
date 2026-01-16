@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { SongSection } from '../types';
-import ChordGroup from './ChordGroup';
+import { SongSection } from '../types.ts';
+import ChordGroup from './ChordGroup.tsx';
 import { RotateCcw, Loader2, ArrowRight, BookOpen } from 'lucide-react';
 
 interface SongSectionViewProps {
@@ -64,7 +64,6 @@ const SongSectionView: React.FC<SongSectionViewProps> = ({ title, section, onRer
         </div>
       </div>
 
-      {/* Grid for larger diagrams */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
         {section.chords.map((chord, idx) => (
           <ChordGroup key={`${title}-${chord}-${idx}`} chordName={chord} />

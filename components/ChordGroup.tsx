@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { findChordDefinition } from '../constants';
-import ChordDiagram from './ChordDiagram';
+import { findChordDefinition } from '../constants.tsx';
+import ChordDiagram from './ChordDiagram.tsx';
 
 interface ChordGroupProps {
   chordName: string;
@@ -21,7 +21,6 @@ const ChordGroup: React.FC<ChordGroupProps> = ({ chordName }) => {
     );
   }
 
-  // Use a 2x2 grid if there are exactly 4 voicings, otherwise flex wrap
   const gridClass = definition.voicings.length === 4 
     ? "grid grid-cols-2 gap-3" 
     : "flex flex-wrap gap-3";

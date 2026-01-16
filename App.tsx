@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Genre, MusicalKey, MusicalMode, SongStructure, SongSection } from './types';
-import { generateChordProgressions, generateSingleSection } from './services/geminiService';
-import SongSectionView from './components/SongSectionView';
+import { Genre, MusicalKey, MusicalMode, SongStructure, SongSection } from './types.ts';
+import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
+import SongSectionView from './components/SongSectionView.tsx';
 import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -71,13 +71,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 pb-20 selection:bg-indigo-500/30">
-      {/* Decorative Gradients */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
       </div>
 
-      {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>

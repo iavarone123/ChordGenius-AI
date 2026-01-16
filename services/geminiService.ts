@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Genre, MusicalKey, MusicalMode, SongSection, SongStructure } from "../types";
+import { Genre, MusicalKey, MusicalMode, SongSection, SongStructure } from "../types.ts";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 

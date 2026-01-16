@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, RotateCcw, Share2, AlertCircle } from 'lucide-react';
+import { Music, Loader2, Sparkles, RotateCcw, Share2, AlertCircle, Key, ChevronRight } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
   const [key, setKey] = useState<MusicalKey>(MusicalKey.C);
   const [mode, setMode] = useState<MusicalMode>(MusicalMode.Major);
@@ -13,6 +14,31 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (process.env.API_KEY) {
+        setHasKey(true);
+        return;
+      }
+      try {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasKey(selected);
+      } catch (e) {
+        setHasKey(false);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleConnect = async () => {
+    try {
+      await window.aistudio.openSelectKey();
+      setHasKey(true); // Proceed assuming success per protocol
+    } catch (err) {
+      console.error("Failed to open key selection:", err);
+    }
+  };
 
   const handleShare = async () => {
     const shareData = {
@@ -43,7 +69,12 @@ const App: React.FC = () => {
       setResult(data);
     } catch (err: any) {
       console.error("Generation Error:", err);
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      if (err.message?.includes("entity was not found")) {
+        setHasKey(false);
+        setError("Connection lost. Please re-connect to Google AI Studio.");
+      } else {
+        setError(err.message || "An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +92,49 @@ const App: React.FC = () => {
       setSectionLoading(prev => ({ ...prev, [sectionKey]: false }));
     }
   };
+
+  if (hasKey === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!hasKey) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 flex flex-col items-center justify-center">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-4">
+            <Music className="w-12 h-12 text-white" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-black tracking-tight text-white">ChordGenius</h1>
+            <p className="text-slate-400 text-lg">Professional AI Songwriting Assistant</p>
+          </div>
+          
+          <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8 space-y-6 shadow-2xl">
+            <p className="text-sm text-slate-300 leading-relaxed text-left">
+              To use ChordGenius, you must connect a Google AI Studio key. If you don't have one, it's free to generate in the Studio.
+            </p>
+            <div className="text-left bg-slate-800/50 p-4 rounded-xl text-xs text-slate-400 space-y-2">
+              <p>1. Open the Studio Dialog</p>
+              <p>2. Select or create a project</p>
+              <p>3. Enable billing (optional for higher tiers) at <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-indigo-400 underline">ai.google.dev/billing</a></p>
+            </div>
+            <button 
+              onClick={handleConnect}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-indigo-500/30"
+            >
+              <Key className="w-5 h-5" />
+              Connect Studio Key
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 md:p-8">

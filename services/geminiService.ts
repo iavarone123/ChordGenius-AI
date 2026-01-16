@@ -13,7 +13,8 @@ const SECTION_SCHEMA = {
 };
 
 /**
- * Creates a new AI instance using the environment's API key.
+ * Creates a fresh AI instance using the current environment's API key.
+ * This is crucial for environments where keys are selected dynamically.
  */
 const getAIClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 

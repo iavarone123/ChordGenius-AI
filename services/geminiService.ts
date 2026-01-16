@@ -12,12 +12,23 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
+/**
+ * Creates a fresh AI instance using the current environment state.
+ */
+const createAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("An API Key must be set when running in a browser. Please link your account.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = createAiClient();
   
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
@@ -49,10 +60,11 @@ export const generateChordProgressions = async (
 
   try {
     const text = response.text;
-    if (!text) throw new Error("No response received.");
+    if (!text) throw new Error("No response received from AI.");
     return JSON.parse(text) as SongStructure;
   } catch (error) {
-    throw new Error("Musical data generation failed. Please try again.");
+    console.error("Parse error:", error);
+    throw new Error("Failed to interpret musical data. Please try again.");
   }
 };
 
@@ -62,7 +74,7 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = createAiClient();
   
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
   

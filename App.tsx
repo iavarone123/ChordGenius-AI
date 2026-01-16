@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Key, Settings } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -33,35 +33,13 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Check if we need to link the key first (AI Studio requirement for some sessions)
-      if (window.aistudio?.hasSelectedApiKey) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey && window.aistudio.openSelectKey) {
-          await window.aistudio.openSelectKey();
-          // Proceed after dialog opens
-        }
-      }
-
       const data = await generateChordProgressions(genre, key, mode);
       setResult(data);
     } catch (err: any) {
       console.error("Generation error:", err);
-      const msg = err.message || "";
-      
-      if (msg.includes("API Key") || msg.includes("apiKey") || msg.includes("set when running in a browser")) {
-        setError("To use this app on your phone, you first need to link your project key once. Tap the key icon in the error box below.");
-      } else {
-        setError(msg || "Unable to connect to AI. Please try again in a moment.");
-      }
+      setError("Unable to connect to the music engine. Please check your internet and try again.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleLinkKeyManually = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      setError(null);
     }
   };
 
@@ -72,7 +50,7 @@ const App: React.FC = () => {
       try { await navigator.share({ title: 'ChordGenius AI', text, url }); } catch (err) {}
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
-      alert("Copied to clipboard!");
+      alert("Song details copied!");
     }
   };
 
@@ -91,26 +69,27 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 pb-20 selection:bg-indigo-500/30">
+      {/* Dynamic Background */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-500/10 blur-[120px] rounded-full" />
       </div>
 
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setResult(null)}>
-            <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setResult(null)}>
+            <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
               <Music className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
               ChordGenius
             </h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button 
               onClick={handleShareApp}
-              className="flex text-xs font-bold text-indigo-400 items-center gap-1.5 transition-all px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
+              className="flex text-xs font-bold text-indigo-400 items-center gap-2 transition-all px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" /> <span>Invite</span>
             </button>
@@ -118,7 +97,7 @@ const App: React.FC = () => {
             {result && (
               <button 
                 onClick={() => setResult(null)}
-                className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800"
+                className="p-2.5 text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-slate-800"
                 title="Reset"
               >
                 <RotateCcw className="w-5 h-5" />
@@ -128,48 +107,48 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+      <main className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
         {!result ? (
-          <div className="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">
-                Unlock your <br/> next <span className="text-indigo-400">masterpiece.</span>
+          <div className="max-w-2xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <div className="text-center space-y-6">
+              <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-[1.1]">
+                Master your <br/> next <span className="text-indigo-400">sound.</span>
               </h2>
-              <p className="text-slate-400 text-base md:text-lg max-w-md mx-auto px-4">
-                The professional songwriting tool for musicians. Generate theory-backed chords in seconds.
+              <p className="text-slate-400 text-lg md:text-xl max-w-md mx-auto leading-relaxed">
+                The smart studio for modern musicians. Theory-backed chords for any genre.
               </p>
             </div>
 
-            <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] p-6 md:p-10 shadow-2xl backdrop-blur-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-10">
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-slate-300 ml-1">Genre</label>
+            <div className="bg-slate-900/50 border border-slate-800/80 rounded-[3rem] p-8 md:p-12 shadow-2xl backdrop-blur-xl ring-1 ring-white/5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div className="space-y-4">
+                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Vibe / Genre</label>
                   <select 
                     value={genre}
                     onChange={(e) => setGenre(e.target.value as Genre)}
-                    className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
+                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-2xl px-6 py-5 text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                   >
                     {Object.values(Genre).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-300 ml-1">Key</label>
+                  <div className="space-y-4">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Key</label>
                     <select 
                       value={key}
                       onChange={(e) => setKey(e.target.value as MusicalKey)}
-                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
+                      className="w-full bg-slate-800/60 border border-slate-700/50 rounded-2xl px-6 py-5 text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                     >
                       {Object.values(MusicalKey).map(k => <option key={k} value={k}>{k}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-300 ml-1">Mode</label>
+                  <div className="space-y-4">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Scale</label>
                     <select 
                       value={mode}
                       onChange={(e) => setMode(e.target.value as MusicalMode)}
-                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
+                      className="w-full bg-slate-800/60 border border-slate-700/50 rounded-2xl px-6 py-5 text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                     >
                       <option value={MusicalMode.Major}>Major</option>
                       <option value={MusicalMode.Minor}>Minor</option>
@@ -181,88 +160,74 @@ const App: React.FC = () => {
               <button 
                 onClick={handleGenerate}
                 disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black py-6 rounded-3xl shadow-2xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-4 group text-xl active:scale-[0.97]"
               >
                 {isLoading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <Loader2 className="w-8 h-8 animate-spin" />
                 ) : (
                   <>
-                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                    Compose My Song
+                    <Sparkles className="w-8 h-8 group-hover:rotate-12 transition-transform" />
+                    Compose Now
                   </>
                 )}
               </button>
 
               {error && (
-                <div className="mt-6 p-5 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-sm flex flex-col gap-3">
-                  <div className="flex items-start gap-3">
-                    <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="mt-8 p-6 bg-red-500/10 border border-red-500/20 rounded-3xl text-red-400 text-sm flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-start gap-4">
+                    <ShieldAlert className="w-6 h-6 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="font-bold">Setup Required</p>
-                      <p className="opacity-80 leading-relaxed">{error}</p>
+                      <p className="font-black uppercase tracking-wider text-xs">Error</p>
+                      <p className="opacity-80 leading-relaxed font-medium">{error}</p>
                     </div>
                   </div>
-                  {(error.includes("API Key") || error.includes("browser")) && (
-                    <button 
-                      onClick={handleLinkKeyManually}
-                      className="mt-2 w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-red-500/20"
-                    >
-                      <Key className="w-4 h-4" /> Link Project Key to Start
-                    </button>
-                  )}
+                  <button 
+                    onClick={handleGenerate}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95"
+                  >
+                    Try Again
+                  </button>
                 </div>
               )}
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
-              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
-                <Guitar className="w-6 h-6 text-indigo-400 mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chord Diagrams</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
-                <Smartphone className="w-6 h-6 text-indigo-400 mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Save to Phone</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
-                <Users className="w-6 h-6 text-indigo-400 mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Community</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
-                <Sparkles className="w-6 h-6 text-indigo-400 mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">AI Logic</span>
-              </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 px-4">
+              <FeatureCard icon={<Guitar className="w-6 h-6" />} label="Chord Charts" />
+              <FeatureCard icon={<Smartphone className="w-6 h-6" />} label="Install as App" />
+              <FeatureCard icon={<Users className="w-6 h-6" />} label="Share Link" />
+              <FeatureCard icon={<Sparkles className="w-6 h-6" />} label="Pro Theory" />
             </div>
           </div>
         ) : (
-          <div className="space-y-12 animate-in fade-in duration-1000 slide-in-from-bottom-4">
-             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/60 pb-8 gap-6 px-2">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-500/20 shadow-sm shadow-indigo-500/10">
-                    Song Draft
+          <div className="space-y-16 animate-in fade-in duration-1000 slide-in-from-bottom-8">
+             <div className="flex flex-col lg:flex-row lg:items-end justify-between border-b border-slate-800/80 pb-12 gap-8 px-4">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full border border-indigo-500/30">
+                    AI Composition
                   </span>
-                  <span className="text-slate-500 text-xs">•</span>
-                  <span className="text-slate-400 text-sm font-medium">{genre}</span>
+                  <span className="text-slate-600 text-xs">•</span>
+                  <span className="text-slate-400 text-base font-bold tracking-tight">{genre} • {key} {mode}</span>
                 </div>
-                <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">Your {genre} Hits in {key} {mode}</h2>
+                <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Your Masterpiece.</h2>
               </div>
               <div className="flex gap-4">
                 <button 
                   onClick={handleShareSong}
-                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-4 rounded-2xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
+                  className="flex-1 lg:flex-none bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-8 py-5 rounded-2xl font-black transition-all border border-indigo-500/20 flex items-center justify-center gap-3 shadow-xl active:scale-95"
                 >
                   <Share2 className="w-5 h-5" /> Share
                 </button>
                 <button 
                   onClick={handleGenerate}
-                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
+                  className="flex-1 lg:flex-none bg-slate-800 hover:bg-slate-700 text-white px-8 py-5 rounded-2xl font-black transition-all border border-slate-700 flex items-center justify-center gap-3 active:scale-95"
                 >
-                  <RotateCcw className="w-5 h-5" /> Remix
+                  <RotateCcw className="w-5 h-5" /> Remix All
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-12 md:gap-16">
+            <div className="grid grid-cols-1 gap-16 lg:gap-24">
               {(['verse', 'preChorus', 'chorus', 'bridge'] as const).map(section => (
                 <SongSectionView 
                   key={section}
@@ -273,18 +238,37 @@ const App: React.FC = () => {
                 />
               ))}
             </div>
+
+            <div className="flex justify-center pb-12">
+               <button 
+                  onClick={() => setResult(null)}
+                  className="text-slate-500 hover:text-indigo-400 font-black uppercase tracking-[0.4em] text-[10px] transition-all py-6 px-12 border border-slate-800 hover:border-indigo-500/30 rounded-full"
+                >
+                  ← New Session
+                </button>
+            </div>
           </div>
         )}
       </main>
-      
-      {/* Mobile Hint for PWA */}
+
+      {/* Cross-Device Hint */}
       {!result && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-max px-6 py-3 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 shadow-2xl animate-bounce">
-          Tap Share → Add to Home Screen to use as an app
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-max px-8 py-4 bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-3">
+          <Smartphone className="w-4 h-4 text-indigo-500" />
+          <span>Tap Share → Add to Home Screen to install as an app</span>
         </div>
       )}
     </div>
   );
 };
+
+const FeatureCard = ({ icon, label }: { icon: React.ReactNode, label: string }) => (
+  <div className="flex flex-col items-center text-center p-6 bg-slate-900/40 rounded-[2rem] border border-slate-800/60 hover:border-indigo-500/30 transition-all hover:translate-y-[-4px] cursor-default">
+    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-3">
+      {icon}
+    </div>
+    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
+  </div>
+);
 
 export default App;

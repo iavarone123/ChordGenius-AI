@@ -13,14 +13,10 @@ const SECTION_SCHEMA = {
 };
 
 /**
- * Creates a fresh AI instance using the current environment state.
+ * Creates a fresh AI instance using the pre-configured environment key.
  */
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("An API Key must be set when running in a browser. Please link your project key in the header.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 };
 
 export const generateChordProgressions = async (
@@ -60,11 +56,11 @@ export const generateChordProgressions = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("The AI returned an empty response.");
+    if (!text) throw new Error("Empty AI response");
     return JSON.parse(text) as SongStructure;
   } catch (error: any) {
-    console.error("AI Generation Error:", error);
-    throw new Error(error.message || "Failed to generate musical data.");
+    console.error("AI Error:", error);
+    throw new Error("Musical generation service is currently unavailable.");
   }
 };
 
@@ -92,6 +88,6 @@ export const generateSingleSection = async (
   });
 
   const text = response.text;
-  if (!text) throw new Error("No response received.");
+  if (!text) throw new Error("Empty AI response");
   return JSON.parse(text) as SongSection;
 };

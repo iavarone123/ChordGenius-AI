@@ -12,23 +12,23 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
-// Standard initialization as per SDK guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  const prompt = `You are an expert music producer. 
+  // Initialize AI client inside the function to ensure process.env.API_KEY is available
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `You are an expert music producer specializing in hit records. 
   Create a professional song structure for the ${genre} genre in the key of ${key} ${mode}. 
   
   IMPORTANT: Only use the most COMMON and POPULAR chord progressions for this style. 
-  Focus on the staple sounds found in hit records.
+  Focus on the staple sounds found in global hit records.
   
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
   
-  In the 'description' for each section, include the Roman Numeral analysis (e.g., I-V-vi-IV) and why it works.
+  In the 'description' for each section, include the Roman Numeral analysis (e.g., I-V-vi-IV) and why it is so popular in ${genre}.
   
   Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
@@ -56,6 +56,7 @@ export const generateChordProgressions = async (
     return JSON.parse(text) as SongStructure;
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    // If it's a key error, we pass it through clearly
     throw error;
   }
 };
@@ -66,7 +67,9 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const prompt = `Provide a popular ${sectionType} chord progression for ${genre} in ${key} ${mode}. 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `Provide a popular and common ${sectionType} chord progression for ${genre} in ${key} ${mode}. 
   Include Roman Numeral analysis in description.
   Use standard notation like 'C', 'Am7'.`;
 

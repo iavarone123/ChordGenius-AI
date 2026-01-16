@@ -14,6 +14,27 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
 
+  const handleShare = async () => {
+    const shareData = {
+      title: 'ChordGenius',
+      text: result 
+        ? `Check out these ${genre} chords in ${key} ${mode} I generated!`
+        : 'Check out this AI chord generator for musicians.',
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error("Share failed:", err);
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      alert("Link copied to clipboard!");
+    }
+  };
+
   const handleGenerate = async () => {
     setIsLoading(true);
     setError(null);
@@ -22,7 +43,8 @@ const App: React.FC = () => {
       setResult(data);
     } catch (err: any) {
       console.error("Connection Error:", err);
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      // Display the actual error message from the API or environment
+      setError(err.message || "An unexpected error occurred. Please check your internet connection or API key configuration.");
     } finally {
       setIsLoading(false);
     }
@@ -44,18 +66,32 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 md:p-8">
       <header className="max-w-4xl mx-auto flex items-center justify-between mb-12">
-        <div className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer" 
+          onClick={() => setResult(null)}
+        >
           <Music className="w-6 h-6 text-indigo-500" />
           <h1 className="text-xl font-bold tracking-tight">ChordGenius</h1>
         </div>
-        {result && (
+        
+        <div className="flex items-center gap-4">
           <button 
-            onClick={() => setResult(null)}
-            className="text-slate-400 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
+            onClick={handleShare}
+            className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors px-4 py-2 rounded-lg bg-slate-900 border border-slate-800"
           >
-            <RotateCcw className="w-4 h-4" /> New Session
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Share</span>
           </button>
-        )}
+          
+          {result && (
+            <button 
+              onClick={() => setResult(null)}
+              className="text-slate-400 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" /> New Session
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="max-w-4xl mx-auto">
@@ -120,9 +156,9 @@ const App: React.FC = () => {
               </button>
 
               {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium">
-                  <p className="font-bold mb-1">Error:</p>
-                  <p className="opacity-80">{error}</p>
+                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium animate-in zoom-in duration-300">
+                  <p className="font-bold mb-1 uppercase tracking-tight">System Message:</p>
+                  <p className="opacity-90 leading-relaxed">{error}</p>
                 </div>
               )}
             </div>
@@ -132,7 +168,7 @@ const App: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-8">
               <div>
                 <h2 className="text-3xl font-black text-white">{genre} in {key} {mode}</h2>
-                <p className="text-slate-400 text-sm mt-1">Based on popular hit records</p>
+                <p className="text-slate-400 text-sm mt-1">Billboard-proven hit record progressions</p>
               </div>
               <button 
                 onClick={handleGenerate}

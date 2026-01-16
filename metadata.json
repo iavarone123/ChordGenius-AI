@@ -1,0 +1,5 @@
+{
+  "name": "ChordGenius AI",
+  "description": "An intelligent songwriting assistant that generates genre-specific chord progressions with visual diagrams for Verse, Chorus, and more.",
+  "requestFramePermissions": []
+}

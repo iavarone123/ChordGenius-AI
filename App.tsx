@@ -22,7 +22,9 @@ const App: React.FC = () => {
       setResult(data);
     } catch (err: any) {
       console.error("Generation error:", err);
-      setError("Unable to connect to AI. Please try again in a moment.");
+      // Capture the actual error message to help the user understand what's wrong.
+      const errorMessage = err.message || "An unexpected error occurred while connecting to the AI.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +127,7 @@ const App: React.FC = () => {
                 Unlock your <br/> next <span className="text-indigo-400">masterpiece.</span>
               </h2>
               <p className="text-slate-400 text-base md:text-lg max-w-md mx-auto px-4">
-                The professional songwriting tool for iPad. Generate theory-backed chords in seconds.
+                The professional songwriting tool for musicians. Generate theory-backed chords in seconds.
               </p>
             </div>
 
@@ -170,101 +172,117 @@ const App: React.FC = () => {
               <button 
                 onClick={handleGenerate}
                 disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
               >
                 {isLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
                   <>
-                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                    Compose My Song
+                    <Sparkles className="w-6 h-6 text-indigo-200 group-hover:rotate-12 transition-transform" />
+                    <span className="text-lg">Compose Progression</span>
                   </>
                 )}
               </button>
 
               {error && (
-                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-3">
-                  <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                  <p>{error}</p>
+                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-400">
+                  <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium leading-relaxed">{error}</p>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 pt-4">
-              <FeatureCard icon={<Guitar />} title="4 Voicings" desc="Optimized for touch screens. Tap to see neck positions." />
-              <FeatureCard icon={<Users />} title="Invite Friends" desc="Share ChordGenius with your bandmates!" onClick={handleShareApp} highlight />
-              <FeatureCard icon={<Smartphone />} title="Add to Home" desc="Install as a PWA for the best iPad experience." />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 px-2">
+              <div className="flex flex-col items-center gap-2 text-slate-500">
+                <Guitar className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Tabs & Diagrams</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-slate-500">
+                <Smartphone className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Mobile Optimized</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-slate-500">
+                <Users className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Solo Artist Tool</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-slate-500">
+                <Sparkles className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">AI Driven</span>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-8 md:space-y-12 animate-in fade-in duration-1000 slide-in-from-bottom-4">
-            <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/60 pb-8 gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-500/20 shadow-sm shadow-indigo-500/10">
-                    Generated Session
-                  </span>
-                  <span className="text-slate-500 text-xs">•</span>
-                  <span className="text-slate-400 text-sm font-medium">{genre}</span>
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm uppercase tracking-[0.2em]">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Progression Crafted</span>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Your Song in {key} {mode}</h2>
+                <h2 className="text-4xl font-extrabold text-white">
+                  {genre} in {key} {mode}
+                </h2>
               </div>
-              <div className="flex gap-4">
+              
+              <div className="flex items-center gap-3">
                 <button 
                   onClick={handleShareSong}
-                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-2xl transition-all active:scale-95 border border-slate-700"
                 >
-                  <Share2 className="w-5 h-5" /> Share
+                  <Share2 className="w-5 h-5" />
+                  <span>Share Song</span>
                 </button>
                 <button 
                   onClick={handleGenerate}
-                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
+                  disabled={isLoading}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-2xl transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
                 >
-                  <RotateCcw className="w-5 h-5" /> Remix
+                  <RotateCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>Regenerate All</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 md:gap-10">
-              {(['verse', 'preChorus', 'chorus', 'bridge'] as const).map(section => (
-                <SongSectionView 
-                  key={section}
-                  title={section} 
-                  section={result[section]} 
-                  onReroll={() => handleRerollSection(section)}
-                  isLoading={sectionLoading[section]}
-                />
-              ))}
+            <div className="space-y-10">
+              <SongSectionView 
+                title="Verse" 
+                section={result.verse} 
+                onReroll={() => handleRerollSection('verse')}
+                isLoading={sectionLoading['verse']}
+              />
+              <SongSectionView 
+                title="Pre-Chorus" 
+                section={result.preChorus} 
+                onReroll={() => handleRerollSection('preChorus')}
+                isLoading={sectionLoading['preChorus']}
+              />
+              <SongSectionView 
+                title="Chorus" 
+                section={result.chorus} 
+                onReroll={() => handleRerollSection('chorus')}
+                isLoading={sectionLoading['chorus']}
+              />
+              <SongSectionView 
+                title="Bridge" 
+                section={result.bridge} 
+                onReroll={() => handleRerollSection('bridge')}
+                isLoading={sectionLoading['bridge']}
+              />
             </div>
 
-            <footer className="text-center pt-16 md:pt-20 border-t border-slate-800/40">
-              <p className="text-slate-400 text-sm font-medium mb-6">
-                Love this app? <button onClick={handleShareApp} className="text-indigo-400 hover:underline font-bold">Invite your bandmates!</button>
-              </p>
-              <div className="flex items-center justify-center gap-6 opacity-30 grayscale contrast-125">
-                 <Music className="w-5 h-5" />
-                 <Guitar className="w-5 h-5" />
-                 <Smartphone className="w-5 h-5" />
-              </div>
-            </footer>
+            <div className="text-center pt-8">
+              <button 
+                onClick={handleReset}
+                className="text-slate-500 hover:text-indigo-400 font-bold uppercase tracking-[0.3em] text-xs transition-colors py-4 px-8 border border-transparent hover:border-indigo-500/20 rounded-full"
+              >
+                ← Back to Studio
+              </button>
+            </div>
           </div>
         )}
       </main>
     </div>
   );
 };
-
-const FeatureCard = ({ icon, title, desc, onClick, highlight }: { icon: React.ReactNode, title: string, desc: string, onClick?: () => void, highlight?: boolean }) => (
-  <div 
-    onClick={onClick}
-    className={`flex flex-col items-center text-center p-6 space-y-3 bg-slate-900/20 rounded-3xl border border-slate-800/30 transition-all hover:scale-105 active:scale-95 ${onClick ? 'cursor-pointer' : ''} ${highlight ? 'bg-indigo-500/10 border-indigo-500/20' : 'hover:bg-slate-900/40'}`}
-  >
-    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${highlight ? 'bg-indigo-600 text-white' : 'bg-slate-900/40 text-indigo-400/80'}`}>
-      {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7" })}
-    </div>
-    <h4 className="font-bold text-white text-lg tracking-tight">{title}</h4>
-    <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
-  </div>
-);
 
 export default App;

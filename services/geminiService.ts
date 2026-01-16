@@ -12,12 +12,14 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
+// Use gemini-3-pro-preview for complex music theory reasoning tasks
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Correctly initialize GoogleGenAI with named parameter and direct process.env.API_KEY
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
@@ -30,7 +32,7 @@ export const generateChordProgressions = async (
   Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -48,6 +50,7 @@ export const generateChordProgressions = async (
   });
 
   try {
+    // response.text is a property, not a method
     const text = response.text;
     if (!text) throw new Error("No response received.");
     return JSON.parse(text) as SongStructure;
@@ -63,7 +66,8 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Correctly initialize GoogleGenAI with named parameter and direct process.env.API_KEY
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
   
@@ -72,7 +76,7 @@ export const generateSingleSection = async (
   Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -81,6 +85,7 @@ export const generateSingleSection = async (
   });
 
   try {
+    // response.text is a property, not a method
     const text = response.text;
     if (!text) throw new Error("No response received.");
     return JSON.parse(text) as SongSection;

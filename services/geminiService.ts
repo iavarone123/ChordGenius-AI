@@ -13,8 +13,7 @@ const SECTION_SCHEMA = {
 };
 
 /**
- * Creates a new AI instance using the current environment's API key.
- * This ensures the most up-to-date key from the selection dialog is used.
+ * Creates a new AI instance using the environment's API key.
  */
 const getAIClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -57,7 +56,7 @@ export const generateChordProgressions = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("The AI studio returned an empty response.");
+    if (!text) throw new Error("The AI returned an empty response.");
     return JSON.parse(text) as SongStructure;
   } catch (error: any) {
     console.error("AI Generation Failed:", error);
@@ -87,6 +86,6 @@ export const generateSingleSection = async (
   });
 
   const text = response.text;
-  if (!text) throw new Error("No data returned from studio.");
+  if (!text) throw new Error("No data returned from AI.");
   return JSON.parse(text) as SongSection;
 };

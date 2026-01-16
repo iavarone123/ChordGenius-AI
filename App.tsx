@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, RotateCcw, Share2, AlertCircle, Key, ChevronRight } from 'lucide-react';
+import { Music, Loader2, Sparkles, RotateCcw, Share2, AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
   const [key, setKey] = useState<MusicalKey>(MusicalKey.C);
   const [mode, setMode] = useState<MusicalMode>(MusicalMode.Major);
@@ -14,31 +13,6 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    // Check if we have an API key or a selection already
-    const checkKey = async () => {
-      // If process.env.API_KEY exists (e.g. from Vercel), we're good
-      if (process.env.API_KEY) {
-        setHasKey(true);
-        return;
-      }
-      // Otherwise check the AI Studio selection status
-      const selected = await window.aistudio.hasSelectedApiKey();
-      setHasKey(selected);
-    };
-    checkKey();
-  }, []);
-
-  const handleConnect = async () => {
-    try {
-      await window.aistudio.openSelectKey();
-      // Per instructions: assume success after triggering the dialog to avoid race conditions
-      setHasKey(true);
-    } catch (err) {
-      console.error("Failed to open key selection:", err);
-    }
-  };
 
   const handleShare = async () => {
     const shareData = {
@@ -69,12 +43,7 @@ const App: React.FC = () => {
       setResult(data);
     } catch (err: any) {
       console.error("Generation Error:", err);
-      if (err.message?.includes("entity was not found") || err.message?.includes("key")) {
-        setHasKey(false);
-        setError("Your connection session expired. Please re-connect to the studio.");
-      } else {
-        setError(err.message || "An unexpected error occurred. Please try again.");
-      }
+      setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -93,50 +62,6 @@ const App: React.FC = () => {
     }
   };
 
-  // 1. Loading State
-  if (hasKey === null) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-      </div>
-    );
-  }
-
-  // 2. Setup Gateway (Removes the "need" for manual keys)
-  if (!hasKey) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full space-y-8 text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-4 animate-bounce">
-            <Music className="w-12 h-12 text-white" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black tracking-tight text-white">ChordGenius</h1>
-            <p className="text-slate-400 text-lg">Your AI songwriting partner.</p>
-          </div>
-          
-          <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8 space-y-6 shadow-2xl">
-            <p className="text-sm text-slate-300 leading-relaxed">
-              To generate hit-ready chord progressions, connect your studio account. 
-              <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline block mt-2 text-xs">
-                Learn about billing & setup
-              </a>
-            </p>
-            <button 
-              onClick={handleConnect}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-indigo-500/30"
-            >
-              <Key className="w-5 h-5" />
-              Connect Studio
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Main Application
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 md:p-8">
       <header className="max-w-5xl mx-auto flex items-center justify-between mb-12">
@@ -153,7 +78,7 @@ const App: React.FC = () => {
             className="flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-all px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95"
           >
             <Share2 className="w-4 h-4" />
-            <span>Share Studio</span>
+            <span>Share</span>
           </button>
           
           {result && (
@@ -175,7 +100,7 @@ const App: React.FC = () => {
               <h2 className="text-5xl md:text-7xl font-black text-white leading-tight">
                 Find your <span className="text-indigo-500">progression.</span>
               </h2>
-              <p className="text-slate-400 text-xl font-medium">Common, popular chords for any genre.</p>
+              <p className="text-slate-400 text-xl font-medium">Industry-standard chords for every genre.</p>
             </div>
 
             <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] p-10 md:p-14 space-y-12 shadow-3xl backdrop-blur-2xl">
@@ -236,7 +161,7 @@ const App: React.FC = () => {
                   <div className="flex items-start gap-4">
                     <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="font-bold text-sm uppercase tracking-widest">Studio Notice</p>
+                      <p className="font-bold text-sm uppercase tracking-widest">Error</p>
                       <p className="text-sm opacity-90 leading-relaxed font-medium">{error}</p>
                     </div>
                   </div>
@@ -249,7 +174,7 @@ const App: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800 pb-12 gap-8">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">
-                  <Sparkles className="w-3.5 h-3.5" /> Analysis Complete
+                  <Sparkles className="w-3.5 h-3.5" /> Generation Complete
                 </div>
                 <h2 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{genre} in {key} <span className="text-indigo-500">{mode}</span></h2>
                 <p className="text-slate-400 text-xl font-medium">Billboard-proven chord mapping for global hits.</p>

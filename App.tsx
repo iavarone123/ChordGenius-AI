@@ -39,7 +39,9 @@ const App: React.FC = () => {
           url: url,
         });
       } catch (err) {
-        console.error('Error sharing:', err);
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Error sharing song:', err);
+        }
       }
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
@@ -92,12 +94,13 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 pb-20 selection:bg-indigo-500/30">
+      {/* Background decoration */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>
             <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
@@ -112,7 +115,7 @@ const App: React.FC = () => {
               onClick={handleShareApp}
               className="flex text-xs md:text-sm font-bold text-indigo-400 items-center gap-1.5 transition-all px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
             >
-              <Send className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Invite Friends</span>
+              <Send className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Invite</span>
             </button>
             {result && (
               <button 
@@ -134,7 +137,7 @@ const App: React.FC = () => {
                 Unlock your <br/> next <span className="text-indigo-400">masterpiece.</span>
               </h2>
               <p className="text-slate-400 text-base md:text-lg max-w-md mx-auto px-4">
-                The perfect songwriting tool for your iPad and iPhone. Generate theory-backed chords in seconds.
+                The perfect songwriting tool for iPad and iPhone. Generate theory-backed chords in seconds.
               </p>
             </div>
 
@@ -201,8 +204,8 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 pt-4">
               <FeatureCard icon={<Guitar />} title="4 Voicings" desc="Optimized for touch screens. Tap to see neck positions." />
-              <FeatureCard icon={<Users />} title="Share the Love" desc="Know a musician? Use the invite button to share this app!" onClick={handleShareApp} />
-              <FeatureCard icon={<Smartphone />} title="PWA Ready" desc="Tap Share and select 'Add to Home Screen' on iOS." />
+              <FeatureCard icon={<Users />} title="Tell a Friend" desc="Share this app with your fellow musicians!" onClick={handleShareApp} highlight />
+              <FeatureCard icon={<Smartphone />} title="Native App" desc="Tap Share and 'Add to Home Screen' for the full experience." />
             </div>
           </div>
         ) : (
@@ -278,12 +281,12 @@ const App: React.FC = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc, onClick }: { icon: React.ReactNode, title: string, desc: string, onClick?: () => void }) => (
+const FeatureCard = ({ icon, title, desc, onClick, highlight }: { icon: React.ReactNode, title: string, desc: string, onClick?: () => void, highlight?: boolean }) => (
   <div 
     onClick={onClick}
-    className={`flex flex-col items-center text-center p-6 space-y-3 bg-slate-900/20 rounded-3xl border border-slate-800/30 transition-all hover:scale-105 active:scale-95 ${onClick ? 'cursor-pointer hover:bg-indigo-500/10 border-indigo-500/10' : 'hover:bg-slate-900/40'}`}
+    className={`flex flex-col items-center text-center p-6 space-y-3 bg-slate-900/20 rounded-3xl border border-slate-800/30 transition-all hover:scale-105 active:scale-95 ${onClick ? 'cursor-pointer' : ''} ${highlight ? 'bg-indigo-500/10 border-indigo-500/20' : 'hover:bg-slate-900/40'}`}
   >
-    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${onClick ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-900/40 text-indigo-400/80'}`}>
+    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${highlight ? 'bg-indigo-600 text-white' : 'bg-slate-900/40 text-indigo-400/80'}`}>
       {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7" })}
     </div>
     <h4 className="font-bold text-white text-lg tracking-tight">{title}</h4>

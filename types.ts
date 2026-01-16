@@ -29,7 +29,8 @@ export enum Genre {
   Soul = 'Soul',
   LoFi = 'Lo-Fi',
   Metal = 'Metal',
-  Funk = 'Funk'
+  Funk = 'Funk',
+  Reggae = 'Reggae'
 }
 
 export interface SongSection {

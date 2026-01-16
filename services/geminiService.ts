@@ -12,20 +12,12 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
-const getAiInstance = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("Your AI session has expired or is not connected. Please connect to AI on the home screen.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
-
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  const ai = getAiInstance();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
@@ -70,7 +62,7 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const ai = getAiInstance();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
   

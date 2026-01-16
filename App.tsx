@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Zap } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -13,34 +13,8 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
-  const [isApiKeyReady, setIsApiKeyReady] = useState<boolean>(!!process.env.API_KEY);
-
-  useEffect(() => {
-    // Check if we need to request a key selection (common for PWAs in some environments)
-    const checkKey = async () => {
-      if (!process.env.API_KEY && window.aistudio?.hasSelectedApiKey) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setIsApiKeyReady(hasKey);
-      }
-    };
-    checkKey();
-  }, []);
-
-  const handleConnectKey = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      // Assume success as per platform guidelines to avoid race conditions
-      setIsApiKeyReady(true);
-      setError(null);
-    }
-  };
 
   const handleGenerate = async () => {
-    if (!isApiKeyReady && !process.env.API_KEY) {
-      setError("Please connect your AI account first using the button below.");
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     try {
@@ -48,12 +22,7 @@ const App: React.FC = () => {
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      if (err.message?.includes("API key")) {
-        setIsApiKeyReady(false);
-        setError("Your API key is missing or invalid. Please tap 'Connect to AI' below.");
-      } else {
-        setError(err.message || "Failed to generate chords. Please try again.");
-      }
+      setError(err.message || "Failed to generate chords. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +125,7 @@ const App: React.FC = () => {
                 Unlock your <br/> next <span className="text-indigo-400">masterpiece.</span>
               </h2>
               <p className="text-slate-400 text-base md:text-lg max-w-md mx-auto px-4">
-                The perfect songwriting tool for iPad. Generate theory-backed chords in seconds.
+                The professional songwriting tool for iPad. Generate theory-backed chords in seconds.
               </p>
             </div>
 
@@ -198,35 +167,20 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {!isApiKeyReady && !process.env.API_KEY ? (
-                <div className="space-y-4">
-                  <button 
-                    onClick={handleConnectKey}
-                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-3 text-lg active:scale-[0.98]"
-                  >
-                    <Zap className="w-6 h-6 fill-current" />
-                    Connect to ChordGenius AI
-                  </button>
-                  <p className="text-center text-xs text-slate-500">
-                    To use this on your iPad, you must first connect your account.
-                  </p>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleGenerate}
-                  disabled={isLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                      Compose My Song
-                    </>
-                  )}
-                </button>
-              )}
+              <button 
+                onClick={handleGenerate}
+                disabled={isLoading}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                    Compose My Song
+                  </>
+                )}
+              </button>
 
               {error && (
                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-3">
@@ -238,8 +192,8 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 pt-4">
               <FeatureCard icon={<Guitar />} title="4 Voicings" desc="Optimized for touch screens. Tap to see neck positions." />
-              <FeatureCard icon={<Users />} title="Tell a Friend" desc="Share this app with your fellow musicians!" onClick={handleShareApp} highlight />
-              <FeatureCard icon={<Smartphone />} title="Native App" desc="Tap Share and 'Add to Home Screen' for the full experience." />
+              <FeatureCard icon={<Users />} title="Invite Friends" desc="Share ChordGenius with your bandmates!" onClick={handleShareApp} highlight />
+              <FeatureCard icon={<Smartphone />} title="Add to Home" desc="Install as a PWA for the best iPad experience." />
             </div>
           </div>
         ) : (

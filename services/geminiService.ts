@@ -13,7 +13,7 @@ const SECTION_SCHEMA = {
 };
 
 /**
- * Creates a fresh AI instance using the pre-configured environment key.
+ * Creates an AI instance using the platform-provided API key.
  */
 const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
@@ -26,15 +26,20 @@ export const generateChordProgressions = async (
 ): Promise<SongStructure> => {
   const ai = getAiClient();
   
-  const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
+  const prompt = `You are a world-class music theorist and hit songwriter. 
+  Create a professional, highly effective ${genre} song structure in the key of ${key} ${mode}. 
+  
+  IMPORTANT: Focus on the most COMMON and POPULAR chord progressions for ${genre}. 
+  Avoid overly complex avant-garde choices unless they are staple to the genre (like in Jazz).
+  
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
   
-  CRITICAL: In the 'description' field for each section, you MUST include:
-  1. The Roman Numeral analysis of the progression (e.g., I - vi - IV - V).
-  2. A brief music theory explanation of why these chords work for the ${genre} genre.
-  3. Mention the specific chord names.
+  In the 'description' field for each section, include:
+  1. The Roman Numeral analysis (e.g., I - vi - IV - V).
+  2. A brief, catchy explanation of why these chords are popular in ${genre}.
+  3. Mention the specific chord names for the musician.
   
-  Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
+  Use standard music notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -56,11 +61,11 @@ export const generateChordProgressions = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("Empty AI response");
+    if (!text) throw new Error("Received empty content from composer.");
     return JSON.parse(text) as SongStructure;
   } catch (error: any) {
-    console.error("AI Error:", error);
-    throw new Error("Musical generation service is currently unavailable.");
+    console.error("AI Music Error:", error);
+    throw new Error("The music engine is busy. Please try composing again in a moment.");
   }
 };
 
@@ -72,9 +77,10 @@ export const generateSingleSection = async (
 ): Promise<SongSection> => {
   const ai = getAiClient();
   
-  const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
+  const prompt = `As a hit songwriter, suggest a new, popular ${sectionType} chord progression for a ${genre} track in ${key} ${mode}. 
+  Focus on the most common and effective choices. 
   
-  CRITICAL: In the 'description' field, include the Roman Numeral analysis and a theory breakdown.
+  Include Roman Numeral analysis in the description.
   
   Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
@@ -88,6 +94,6 @@ export const generateSingleSection = async (
   });
 
   const text = response.text;
-  if (!text) throw new Error("Empty AI response");
+  if (!text) throw new Error("Empty response");
   return JSON.parse(text) as SongSection;
 };

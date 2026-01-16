@@ -12,38 +12,25 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
-/**
- * Direct AI instance initialization.
- */
-const getAiClient = () => {
-  const key = process.env.API_KEY;
-  if (!key) {
-    console.error("Critical: API_KEY is missing from environment variables.");
-  }
-  return new GoogleGenAI({ apiKey: key || "" });
-};
+// Standard initialization as per SDK guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  const ai = getAiClient();
+  const prompt = `You are an expert music producer. 
+  Create a professional song structure for the ${genre} genre in the key of ${key} ${mode}. 
   
-  const prompt = `You are a legendary, multi-platinum music producer. 
-  Create a hit-record song structure in the genre of ${genre} using the key of ${key} ${mode}. 
-  
-  CRITICAL: You MUST prioritize the most COMMON and POPULAR chord progressions used in modern hit songs (Billboard Top 100 style). 
-  Use progressions that are listeners find instantly familiar and catchy.
+  IMPORTANT: Only use the most COMMON and POPULAR chord progressions for this style. 
+  Focus on the staple sounds found in hit records.
   
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
   
-  In the 'description' field for each section, include:
-  1. The Roman Numeral analysis (e.g., I - V - vi - IV).
-  2. Why this progression is a popular staple for ${genre}.
-  3. The exact chords to play.
+  In the 'description' for each section, include the Roman Numeral analysis (e.g., I-V-vi-IV) and why it works.
   
-  Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
+  Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -65,11 +52,11 @@ export const generateChordProgressions = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("Empty Studio response.");
+    if (!text) throw new Error("No content received from AI service.");
     return JSON.parse(text) as SongStructure;
   } catch (error: any) {
-    console.error("AI Error:", error);
-    throw new Error("Studio engine timeout. Reconnecting...");
+    console.error("Gemini API Error:", error);
+    throw error;
   }
 };
 
@@ -79,14 +66,9 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  const ai = getAiClient();
-  
-  const prompt = `As a hit songwriter, suggest a new, highly POPULAR ${sectionType} chord progression for a ${genre} track in ${key} ${mode}. 
-  Focus on common choices that work for professional radio play.
-  
-  Include Roman Numeral analysis.
-  
-  Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
+  const prompt = `Provide a popular ${sectionType} chord progression for ${genre} in ${key} ${mode}. 
+  Include Roman Numeral analysis in description.
+  Use standard notation like 'C', 'Am7'.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',

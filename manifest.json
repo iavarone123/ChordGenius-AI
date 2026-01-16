@@ -1,14 +1,14 @@
 
 {
-  "name": "ChordGenius AI",
+  "name": "ChordGenius AI Songwriter",
   "short_name": "ChordGenius",
-  "description": "AI-powered songwriting chord progression generator.",
+  "description": "Professional AI chord progression generator for musicians.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "orientation": "any",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234f46e5%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%2260%22>🎸</text></svg>",

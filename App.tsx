@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Key } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Key, Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -13,28 +13,19 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
-  const [hasKey, setHasKey] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    checkKeyStatus();
-  }, []);
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'ChordGenius AI',
+      text: 'Check out this AI songwriting tool. It generates professional chord progressions in seconds!',
+      url: window.location.origin,
+    };
 
-  const checkKeyStatus = async () => {
-    if (window.aistudio?.hasSelectedApiKey) {
-      const selected = await window.aistudio.hasSelectedApiKey();
-      setHasKey(selected);
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch (err) { }
     } else {
-      // Fallback if not in AI Studio environment
-      setHasKey(!!process.env.API_KEY);
-    }
-  };
-
-  const handleLinkKey = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      // Assume success as per platform guidelines
-      setHasKey(true);
-      setError(null);
+      navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      alert("App link copied!");
     }
   };
 
@@ -42,21 +33,35 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Re-check key status immediately before call
-      await checkKeyStatus();
+      // Check if we need to link the key first (AI Studio requirement for some sessions)
+      if (window.aistudio?.hasSelectedApiKey) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey && window.aistudio.openSelectKey) {
+          await window.aistudio.openSelectKey();
+          // Proceed after dialog opens
+        }
+      }
+
       const data = await generateChordProgressions(genre, key, mode);
       setResult(data);
     } catch (err: any) {
       console.error("Generation error:", err);
       const msg = err.message || "";
-      if (msg.includes("API key") || msg.includes("apiKey")) {
-        setError("API Key missing. Please click 'Link Project Key' above.");
-        setHasKey(false);
+      
+      if (msg.includes("API Key") || msg.includes("apiKey") || msg.includes("set when running in a browser")) {
+        setError("To use this app on your phone, you first need to link your project key once. Tap the key icon in the error box below.");
       } else {
-        setError(msg || "Failed to connect to AI service. Please try again.");
+        setError(msg || "Unable to connect to AI. Please try again in a moment.");
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLinkKeyManually = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      setError(null);
     }
   };
 
@@ -98,25 +103,25 @@ const App: React.FC = () => {
               <Music className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              ChordGenius AI
+              ChordGenius
             </h1>
           </div>
           
-          <div className="flex items-center gap-3">
-            {hasKey === false && (
-              <button 
-                onClick={handleLinkKey}
-                className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full border border-amber-500/30 text-xs font-bold transition-all animate-pulse"
-              >
-                <Key className="w-3.5 h-3.5" /> Link Project Key
-              </button>
-            )}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleShareApp}
+              className="flex text-xs font-bold text-indigo-400 items-center gap-1.5 transition-all px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
+            >
+              <Send className="w-3.5 h-3.5" /> <span>Invite</span>
+            </button>
+            
             {result && (
               <button 
                 onClick={() => setResult(null)}
-                className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
+                className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800"
+                title="Reset"
               >
-                <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Reset</span>
+                <RotateCcw className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -135,7 +140,7 @@ const App: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-2xl backdrop-blur-sm">
+            <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] p-6 md:p-10 shadow-2xl backdrop-blur-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-10">
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-slate-300 ml-1">Genre</label>
@@ -189,54 +194,75 @@ const App: React.FC = () => {
               </button>
 
               {error && (
-                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                    <p className="font-bold">AI Connection Error</p>
+                <div className="mt-6 p-5 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-sm flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold">Setup Required</p>
+                      <p className="opacity-80 leading-relaxed">{error}</p>
+                    </div>
                   </div>
-                  <p className="opacity-80 ml-8">{error}</p>
-                  {error.includes("API Key") && (
+                  {(error.includes("API Key") || error.includes("browser")) && (
                     <button 
-                      onClick={handleLinkKey}
-                      className="mt-2 ml-8 text-indigo-400 font-bold hover:underline flex items-center gap-1.5"
+                      onClick={handleLinkKeyManually}
+                      className="mt-2 w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-red-500/20"
                     >
-                      <Key className="w-4 h-4" /> Fix this: Link your key here
+                      <Key className="w-4 h-4" /> Link Project Key to Start
                     </button>
                   )}
                 </div>
               )}
             </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
+              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
+                <Guitar className="w-6 h-6 text-indigo-400 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chord Diagrams</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
+                <Smartphone className="w-6 h-6 text-indigo-400 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Save to Phone</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
+                <Users className="w-6 h-6 text-indigo-400 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Community</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-5 bg-slate-900/20 rounded-3xl border border-slate-800/40">
+                <Sparkles className="w-6 h-6 text-indigo-400 mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">AI Logic</span>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-12 animate-in fade-in duration-1000 slide-in-from-bottom-4">
-             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/60 pb-8 gap-6">
+             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/60 pb-8 gap-6 px-2">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-500/20 shadow-sm shadow-indigo-500/10">
-                    Generated Session
+                    Song Draft
                   </span>
                   <span className="text-slate-500 text-xs">•</span>
                   <span className="text-slate-400 text-sm font-medium">{genre}</span>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Your Song in {key} {mode}</h2>
+                <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">Your {genre} Hits in {key} {mode}</h2>
               </div>
               <div className="flex gap-4">
                 <button 
                   onClick={handleShareSong}
-                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
+                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-4 rounded-2xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
                 >
                   <Share2 className="w-5 h-5" /> Share
                 </button>
                 <button 
                   onClick={handleGenerate}
-                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
                 >
                   <RotateCcw className="w-5 h-5" /> Remix
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 md:gap-10">
+            <div className="grid grid-cols-1 gap-12 md:gap-16">
               {(['verse', 'preChorus', 'chorus', 'bridge'] as const).map(section => (
                 <SongSectionView 
                   key={section}
@@ -250,6 +276,13 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+      
+      {/* Mobile Hint for PWA */}
+      {!result && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-max px-6 py-3 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 shadow-2xl animate-bounce">
+          Tap Share → Add to Home Screen to use as an app
+        </div>
+      )}
     </div>
   );
 };

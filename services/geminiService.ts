@@ -18,7 +18,7 @@ const SECTION_SCHEMA = {
 const getAiClient = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API Key is currently undefined in the browser environment. Please link your project key.");
+    throw new Error("An API Key must be set when running in a browser. Please link your project key in the header.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -42,7 +42,7 @@ export const generateChordProgressions = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -83,7 +83,7 @@ export const generateSingleSection = async (
   Use standard notation like 'C', 'Am7', 'Gmaj9'.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: prompt,
     config: {
       responseMimeType: "application/json",

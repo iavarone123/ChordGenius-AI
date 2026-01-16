@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, Key } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -13,18 +13,48 @@ const App: React.FC = () => {
   const [result, setResult] = useState<SongStructure | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>({});
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkKeyStatus();
+  }, []);
+
+  const checkKeyStatus = async () => {
+    if (window.aistudio?.hasSelectedApiKey) {
+      const selected = await window.aistudio.hasSelectedApiKey();
+      setHasKey(selected);
+    } else {
+      // Fallback if not in AI Studio environment
+      setHasKey(!!process.env.API_KEY);
+    }
+  };
+
+  const handleLinkKey = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      // Assume success as per platform guidelines
+      setHasKey(true);
+      setError(null);
+    }
+  };
 
   const handleGenerate = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      // Re-check key status immediately before call
+      await checkKeyStatus();
       const data = await generateChordProgressions(genre, key, mode);
       setResult(data);
     } catch (err: any) {
       console.error("Generation error:", err);
-      // Capture the actual error message to help the user understand what's wrong.
-      const errorMessage = err.message || "An unexpected error occurred while connecting to the AI.";
-      setError(errorMessage);
+      const msg = err.message || "";
+      if (msg.includes("API key") || msg.includes("apiKey")) {
+        setError("API Key missing. Please click 'Link Project Key' above.");
+        setHasKey(false);
+      } else {
+        setError(msg || "Failed to connect to AI service. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -33,35 +63,11 @@ const App: React.FC = () => {
   const handleShareSong = async () => {
     const text = `Check out my ${genre} song in ${key} ${mode} generated with ChordGenius AI!`;
     const url = window.location.href;
-    
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'ChordGenius AI Progression',
-          text: text,
-          url: url,
-        });
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') console.error('Error sharing:', err);
-      }
+      try { await navigator.share({ title: 'ChordGenius AI', text, url }); } catch (err) {}
     } else {
       navigator.clipboard.writeText(`${text} ${url}`);
-      alert("Song details and link copied to clipboard!");
-    }
-  };
-
-  const handleShareApp = async () => {
-    const shareData = {
-      title: 'ChordGenius AI',
-      text: 'Check out this AI songwriting tool. It generates professional chord progressions in seconds!',
-      url: window.location.origin,
-    };
-
-    if (navigator.share) {
-      try { await navigator.share(shareData); } catch (err) { }
-    } else {
-      navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-      alert("App link copied!");
+      alert("Copied to clipboard!");
     }
   };
 
@@ -78,11 +84,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    setResult(null);
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 pb-20 selection:bg-indigo-500/30">
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -92,7 +93,7 @@ const App: React.FC = () => {
 
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setResult(null)}>
             <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
               <Music className="w-5 h-5 text-white" />
             </div>
@@ -100,16 +101,19 @@ const App: React.FC = () => {
               ChordGenius AI
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleShareApp}
-              className="flex text-xs font-bold text-indigo-400 items-center gap-1.5 transition-all px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-95"
-            >
-              <Send className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Invite</span>
-            </button>
+          
+          <div className="flex items-center gap-3">
+            {hasKey === false && (
+              <button 
+                onClick={handleLinkKey}
+                className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full border border-amber-500/30 text-xs font-bold transition-all animate-pulse"
+              >
+                <Key className="w-3.5 h-3.5" /> Link Project Key
+              </button>
+            )}
             {result && (
               <button 
-                onClick={handleReset}
+                onClick={() => setResult(null)}
                 className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
               >
                 <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Reset</span>
@@ -138,7 +142,7 @@ const App: React.FC = () => {
                   <select 
                     value={genre}
                     onChange={(e) => setGenre(e.target.value as Genre)}
-                    className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800 shadow-inner"
+                    className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                   >
                     {Object.values(Genre).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
@@ -150,7 +154,7 @@ const App: React.FC = () => {
                     <select 
                       value={key}
                       onChange={(e) => setKey(e.target.value as MusicalKey)}
-                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800 shadow-inner"
+                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                     >
                       {Object.values(MusicalKey).map(k => <option key={k} value={k}>{k}</option>)}
                     </select>
@@ -160,7 +164,7 @@ const App: React.FC = () => {
                     <select 
                       value={mode}
                       onChange={(e) => setMode(e.target.value as MusicalMode)}
-                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800 shadow-inner"
+                      className="w-full bg-slate-800/80 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-slate-800"
                     >
                       <option value={MusicalMode.Major}>Major</option>
                       <option value={MusicalMode.Minor}>Minor</option>
@@ -172,111 +176,76 @@ const App: React.FC = () => {
               <button 
                 onClick={handleGenerate}
                 disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group text-lg active:scale-[0.98]"
               >
                 {isLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
                   <>
-                    <Sparkles className="w-6 h-6 text-indigo-200 group-hover:rotate-12 transition-transform" />
-                    <span className="text-lg">Compose Progression</span>
+                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                    Compose My Song
                   </>
                 )}
               </button>
 
               {error && (
-                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-400">
-                  <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium leading-relaxed">{error}</p>
+                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+                    <p className="font-bold">AI Connection Error</p>
+                  </div>
+                  <p className="opacity-80 ml-8">{error}</p>
+                  {error.includes("API Key") && (
+                    <button 
+                      onClick={handleLinkKey}
+                      className="mt-2 ml-8 text-indigo-400 font-bold hover:underline flex items-center gap-1.5"
+                    >
+                      <Key className="w-4 h-4" /> Fix this: Link your key here
+                    </button>
+                  )}
                 </div>
               )}
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 px-2">
-              <div className="flex flex-col items-center gap-2 text-slate-500">
-                <Guitar className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Tabs & Diagrams</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 text-slate-500">
-                <Smartphone className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Mobile Optimized</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 text-slate-500">
-                <Users className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Solo Artist Tool</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 text-slate-500">
-                <Sparkles className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">AI Driven</span>
-              </div>
-            </div>
           </div>
         ) : (
-          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm uppercase tracking-[0.2em]">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Progression Crafted</span>
+          <div className="space-y-12 animate-in fade-in duration-1000 slide-in-from-bottom-4">
+             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/60 pb-8 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-500/20 shadow-sm shadow-indigo-500/10">
+                    Generated Session
+                  </span>
+                  <span className="text-slate-500 text-xs">•</span>
+                  <span className="text-slate-400 text-sm font-medium">{genre}</span>
                 </div>
-                <h2 className="text-4xl font-extrabold text-white">
-                  {genre} in {key} {mode}
-                </h2>
+                <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Your Song in {key} {mode}</h2>
               </div>
-              
-              <div className="flex items-center gap-3">
+              <div className="flex gap-4">
                 <button 
                   onClick={handleShareSong}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-2xl transition-all active:scale-95 border border-slate-700"
+                  className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-6 py-3 rounded-xl font-bold transition-all border border-indigo-500/30 flex items-center gap-2 shadow-lg active:scale-95"
                 >
-                  <Share2 className="w-5 h-5" />
-                  <span>Share Song</span>
+                  <Share2 className="w-5 h-5" /> Share
                 </button>
                 <button 
                   onClick={handleGenerate}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-2xl transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all border border-slate-700 flex items-center gap-2 active:scale-95"
                 >
-                  <RotateCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>Regenerate All</span>
+                  <RotateCcw className="w-5 h-5" /> Remix
                 </button>
               </div>
             </div>
 
-            <div className="space-y-10">
-              <SongSectionView 
-                title="Verse" 
-                section={result.verse} 
-                onReroll={() => handleRerollSection('verse')}
-                isLoading={sectionLoading['verse']}
-              />
-              <SongSectionView 
-                title="Pre-Chorus" 
-                section={result.preChorus} 
-                onReroll={() => handleRerollSection('preChorus')}
-                isLoading={sectionLoading['preChorus']}
-              />
-              <SongSectionView 
-                title="Chorus" 
-                section={result.chorus} 
-                onReroll={() => handleRerollSection('chorus')}
-                isLoading={sectionLoading['chorus']}
-              />
-              <SongSectionView 
-                title="Bridge" 
-                section={result.bridge} 
-                onReroll={() => handleRerollSection('bridge')}
-                isLoading={sectionLoading['bridge']}
-              />
-            </div>
-
-            <div className="text-center pt-8">
-              <button 
-                onClick={handleReset}
-                className="text-slate-500 hover:text-indigo-400 font-bold uppercase tracking-[0.3em] text-xs transition-colors py-4 px-8 border border-transparent hover:border-indigo-500/20 rounded-full"
-              >
-                ← Back to Studio
-              </button>
+            <div className="grid grid-cols-1 gap-8 md:gap-10">
+              {(['verse', 'preChorus', 'chorus', 'bridge'] as const).map(section => (
+                <SongSectionView 
+                  key={section}
+                  title={section} 
+                  section={result[section]} 
+                  onReroll={() => handleRerollSection(section)}
+                  isLoading={sectionLoading[section]}
+                />
+              ))}
             </div>
           </div>
         )}

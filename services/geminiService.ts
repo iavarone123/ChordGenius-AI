@@ -12,14 +12,23 @@ const SECTION_SCHEMA = {
   required: ["chords", "vibe", "description"]
 };
 
-// Use gemini-3-pro-preview for complex music theory reasoning tasks
+/**
+ * Creates a fresh AI instance using the current environment state.
+ */
+const getAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key is currently undefined in the browser environment. Please link your project key.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 export const generateChordProgressions = async (
   genre: Genre,
   key: MusicalKey,
   mode: MusicalMode
 ): Promise<SongStructure> => {
-  // Correctly initialize GoogleGenAI with named parameter and direct process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAiClient();
   
   const prompt = `You are a professional music theorist. Create a high-quality ${genre} chord progression in the key of ${key} ${mode}. 
   Provide chord names for Verse, Pre-Chorus, Chorus, and Bridge. 
@@ -31,32 +40,31 @@ export const generateChordProgressions = async (
   
   Use standard notation like 'C', 'Am7', 'Gmaj9', 'F#m7b5'.`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          verse: SECTION_SCHEMA,
-          preChorus: SECTION_SCHEMA,
-          chorus: SECTION_SCHEMA,
-          bridge: SECTION_SCHEMA
-        },
-        required: ["verse", "preChorus", "chorus", "bridge"]
-      }
-    }
-  });
-
   try {
-    // response.text is a property, not a method
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            verse: SECTION_SCHEMA,
+            preChorus: SECTION_SCHEMA,
+            chorus: SECTION_SCHEMA,
+            bridge: SECTION_SCHEMA
+          },
+          required: ["verse", "preChorus", "chorus", "bridge"]
+        }
+      }
+    });
+
     const text = response.text;
-    if (!text) throw new Error("No response received.");
+    if (!text) throw new Error("The AI returned an empty response.");
     return JSON.parse(text) as SongStructure;
-  } catch (error) {
-    console.error("Parse error:", error);
-    throw new Error("Failed to interpret musical data. Please try again.");
+  } catch (error: any) {
+    console.error("AI Generation Error:", error);
+    throw new Error(error.message || "Failed to generate musical data.");
   }
 };
 
@@ -66,8 +74,7 @@ export const generateSingleSection = async (
   mode: MusicalMode,
   sectionType: string
 ): Promise<SongSection> => {
-  // Correctly initialize GoogleGenAI with named parameter and direct process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAiClient();
   
   const prompt = `You are a professional music theorist. Create a new ${sectionType} chord progression for a ${genre} song in the key of ${key} ${mode}. 
   
@@ -84,12 +91,7 @@ export const generateSingleSection = async (
     }
   });
 
-  try {
-    // response.text is a property, not a method
-    const text = response.text;
-    if (!text) throw new Error("No response received.");
-    return JSON.parse(text) as SongSection;
-  } catch (error) {
-    throw new Error("Section generation failed.");
-  }
+  const text = response.text;
+  if (!text) throw new Error("No response received.");
+  return JSON.parse(text) as SongSection;
 };

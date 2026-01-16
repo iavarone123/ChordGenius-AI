@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Genre, MusicalKey, MusicalMode, SongStructure } from './types.ts';
 import { generateChordProgressions, generateSingleSection } from './services/geminiService.ts';
 import SongSectionView from './components/SongSectionView.tsx';
-import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert, ExternalLink } from 'lucide-react';
+import { Music, Loader2, Sparkles, Guitar, RotateCcw, Share2, Smartphone, Send, Users, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [genre, setGenre] = useState<Genre>(Genre.Pop);
@@ -17,41 +17,12 @@ const App: React.FC = () => {
   const handleGenerate = async () => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      // Platform Check: Use the native AI Studio selection tools if available
-      // This is necessary because process.env.API_KEY is only injected after a key is selected.
-      if (typeof window !== 'undefined' && (window as any).aistudio) {
-        const studio = (window as any).aistudio;
-        if (studio.hasSelectedApiKey && studio.openSelectKey) {
-          const hasKey = await studio.hasSelectedApiKey();
-          if (!hasKey) {
-            await studio.openSelectKey();
-            // As per guidelines, assume success and proceed
-          }
-        }
-      }
-
       const data = await generateChordProgressions(genre, key, mode);
       setResult(data);
     } catch (err: any) {
       console.error("Generation error:", err);
-      const msg = err.message || "";
-      
-      if (msg.includes("API key") || msg.includes("apiKey")) {
-        setError("No API Key linked. Please select a project with a paid billing plan.");
-        // Re-trigger key selection if missing
-        if ((window as any).aistudio?.openSelectKey) {
-          await (window as any).aistudio.openSelectKey();
-        }
-      } else if (msg.includes("Requested entity was not found")) {
-        setError("Selected project not found. Please select a valid paid GCP project.");
-        if ((window as any).aistudio?.openSelectKey) {
-          await (window as any).aistudio.openSelectKey();
-        }
-      } else {
-        setError(msg || "Failed to generate chords. Please try again.");
-      }
+      setError("Unable to connect to AI. Please try again in a moment.");
     } finally {
       setIsLoading(false);
     }
@@ -212,23 +183,9 @@ const App: React.FC = () => {
               </button>
 
               {error && (
-                <div className="mt-6 space-y-4">
-                  <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-3">
-                    <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                    <p>{error}</p>
-                  </div>
-                  {error.includes("API Key") && (
-                    <div className="px-4">
-                      <a 
-                        href="https://ai.google.dev/gemini-api/docs/billing" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-indigo-400 flex items-center gap-1 hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Billing Documentation
-                      </a>
-                    </div>
-                  )}
+                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-sm flex items-center gap-3">
+                  <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+                  <p>{error}</p>
                 </div>
               )}
             </div>
